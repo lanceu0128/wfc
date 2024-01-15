@@ -26,6 +26,7 @@ private:
     int cols;
     char **grid;
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
+    std::unordered_map<char, int> weights;
 
 public:
     Wave(int numRows, int numCols)
@@ -83,6 +84,13 @@ public:
 
                 // LOOK LEFT
                 if (c > 0) { rules.insert( {constraintGrid[r][c], constraintGrid[r][c-1], Right} ); };
+
+                // ADD TO WEIGHTS
+                if (weights[constraintGrid[r][c]] == 0) {
+                    weights[constraintGrid[r][c]] = 1;
+                } else {
+                    weights[constraintGrid[r][c]] = weights[constraintGrid[r][c]] + 1;
+                }
             }
         }
     }
@@ -95,9 +103,15 @@ public:
             {Down, "Down"}
         };
 
+        std::cout << "Rules:" << std::endl;
         for (const auto& rule : rules) {
-            std::cout << "Tuple: (" << std::get<0>(rule) << ", " << std::get<1>(rule)
+            std::cout << "(" << std::get<0>(rule) << ", " << std::get<1>(rule)
                   << ", " << dirToString[std::get<2>(rule)] << ")" << std::endl;
+        }
+
+        std::cout << "\nWeights:" << std::endl;
+        for (const auto& [key, value] : weights) {
+            std::cout << '[' << key << "] = " << value << std::endl;
         }
     }
 };
@@ -106,15 +120,15 @@ int main()
 {
     Wave wave(10, 10);
 
+    // std::array<std::array<char,2>,1> constraintGrid {{
+    //     {{'S','C'}}
+    // }};
+
     std::array<std::array<char,3>,3> constraintGrid {{
         {{'S','S','S'}},
         {{'C','C','S'}},
         {{'L','L','C'}}
     }};
-
-    // std::array<std::array<char,2>,1> constraintGrid {{
-    //     {{'S','C'}}
-    // }};
 
     wave.generateConstraints(constraintGrid);
     wave.printConstraints();
