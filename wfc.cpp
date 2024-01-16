@@ -81,9 +81,9 @@ public:
         }
     }
 
-    void collapseTile(int r, int c, char newValue) 
+    void collapse(int r, int c) 
     {
-        grid[r][c] = newValue;
+        grid[r][c] = *superpositions[r][c].begin();
         superpositions[r][c].clear();
         entropies[r][c] = 0;
         propogate(r, c);
@@ -122,10 +122,10 @@ public:
         double entropy = 0;
         for (const auto& event : superpositions[r][c]) {
             double prob_event = weights[event] / weightTotal;
-            entropy += prob_event * log(1 / prob_event);  
+            entropy += prob_event * log(prob_event);  
         }
 
-        return entropy;
+        return -entropy;
     }
 
     template <size_t constraintRows, size_t constraintCols>
@@ -159,6 +159,31 @@ public:
                 positions.insert( constraintGrid[r][c]);
             }
         }
+    }
+
+    bool step() {
+        // find minimal nonzero entropy
+        double minEntropy = -1;
+        int minC = 0;
+        int minR = 0;
+        for (int r=0; r < rows; r++) 
+        {
+            for (int c=0; c < cols; c++) 
+            {
+                if (grid[r][c] == '*' && (-entropies[r][c] < minEntropy || minEntropy == -1)) { 
+                    minEntropy = entropies[r][c]; 
+                    minR = r;
+                    minC = c;
+                }; 
+            }
+        } 
+
+        // break if all cells checked
+        if (minEntropy == -1) { return false; };
+
+        // collapse and propogate
+        collapse(minR, minC);
+        return true;
     }
 
     void printGrid() const 
@@ -230,23 +255,17 @@ int main()
     // }};
 
     std::array<std::array<char,3>,3> constraintGrid {{
-        {{'S','S','S'}},
-        {{'C','C','S'}},
+        {{'C','S','S'}},
+        {{'L','C','S'}},
         {{'L','L','C'}}
     }};
 
-    Wave wave(3, 3, constraintGrid);
+    Wave wave(6, 6, constraintGrid);
 
-    wave.collapseTile(0, 0, 'S');
-    wave.printGrid();
-    wave.printSuperpositions();
-    wave.printEntropies();
-    wave.collapseTile(1, 1, 'C');
-    wave.printGrid();
-    wave.printSuperpositions();
-    wave.printEntropies();
-
-    // wave.printGrid();
-    // wave.printSuperpositions();
-    // wave.printConstraints();
+    bool retval = true;
+    while (retval) {
+        retval = wave.step();
+        wave.printGrid();
+        wave.printSuperpositions();
+    }
 };
