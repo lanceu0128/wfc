@@ -30,6 +30,12 @@ private:
     std::unordered_set<char> **superpositions;
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
     std::unordered_map<char, int> weights;
+    std::unordered_map<Dir, std::string> dirToString = {
+        {Left, "Left"},
+        {Right, "Right"},
+        {Up, "Up"},
+        {Down, "Down"}
+    };
 
 public:
     template <size_t constraintRows, size_t constraintCols>
@@ -60,9 +66,42 @@ public:
 
     }
 
-    void setTile(int r, int c, char newValue) 
+    void collapseTile(int r, int c, char newValue) 
     {
         grid[r][c] = newValue;
+        superpositions[r][c].clear();
+        propogate(r, c);
+    }
+
+    void propogate(int r, int c) {
+        if (r > 0) { compareTiles(grid[r][c], r-1, c, Down); };
+        if (c < cols-1) { compareTiles(grid[r][c], r, c+1, Left); };
+        if (r < rows-1) { compareTiles(grid[r][c], r+1, c, Up); };
+        if (c > 0) { compareTiles(grid[r][c], r, c-1, Right); };
+    }
+
+    void compareTiles(char tile1, int tile2_r, int tile2_c, Dir d) {
+        if (grid[tile2_r][tile2_c] != '*') { return; };
+
+        std::vector<char> positionsToErase;
+
+        for (const auto& position : superpositions[tile2_r][tile2_c]) {
+            std::tuple<char, char, Dir> ruleToFind = std::make_tuple(tile1, position, d);
+            
+            std::cout << "(" << std::get<0>(ruleToFind) << ", " << std::get<1>(ruleToFind)
+                  << ", " << dirToString[std::get<2>(ruleToFind)] << ")" << std::endl;
+            
+            auto it = rules.find(ruleToFind); 
+
+            if (it == rules.end()) {
+                std::cout << "Tuple is not in the set." << std::endl;
+                positionsToErase.push_back(position);
+            }       
+        }
+
+        for (const auto& position : positionsToErase) {
+            superpositions[tile2_r][tile2_c].erase(position);
+        }
     }
 
     template <size_t constraintRows, size_t constraintCols>
@@ -128,13 +167,6 @@ public:
     }
 
     void printConstraints() {
-        std::unordered_map<Dir, std::string> dirToString = {
-            {Left, "Left"},
-            {Right, "Right"},
-            {Up, "Up"},
-            {Down, "Down"}
-        };
-
         std::cout << "Rules:" << std::endl;
         for (const auto& rule : rules) {
             std::cout << "(" << std::get<0>(rule) << ", " << std::get<1>(rule)
@@ -156,7 +188,7 @@ public:
 int main()
 {
     // std::array<std::array<char,2>,1> constraintGrid {{
-    //     {{'S','C'}}
+    //     {{'C','S'}}
     // }};
 
     std::array<std::array<char,3>,3> constraintGrid {{
@@ -165,8 +197,12 @@ int main()
         {{'L','L','C'}}
     }};
 
-    Wave wave(10, 10, constraintGrid);
+    Wave wave(3, 3, constraintGrid);
+
+    wave.collapseTile(0, 0, 'S');
+    wave.collapseTile(1, 1, 'C');
+
     wave.printGrid();
-    wave.printConstraints();
     wave.printSuperpositions();
+    wave.printConstraints();
 };
