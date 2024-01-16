@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <cmath>
 
 enum Dir { Up, Right, Down, Left };
 
@@ -25,11 +26,19 @@ class Wave
 private:
     int rows;
     int cols;
+    
+    // grids
     char **grid;
-    std::unordered_set<char> positions;
+    double **entropies;
     std::unordered_set<char> **superpositions;
+    
+    // constraints
+    std::unordered_set<char> positions;
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
-    std::unordered_map<char, int> weights;
+    std::unordered_map<char, double> weights;
+    double weightTotal = 0;
+
+    // Dir enum -> string translator
     std::unordered_map<Dir, std::string> dirToString = {
         {Left, "Left"},
         {Right, "Right"},
@@ -44,14 +53,20 @@ public:
         rows = numRows;
         cols = numCols;
         generateConstraints(constraintGrid);
+        generateGrids();
+    }
 
+    void generateGrids() {
         // creating references
         grid = new char *[rows]; // new = heap allocation, otherwise same as C
         superpositions = new std::unordered_set<char> *[rows]; // new = heap allocation, otherwise same as C
+        entropies = new double *[rows];
+
         for (int r = 0; r < rows; r++) 
         {
             grid[r] = new char[cols];
             superpositions[r] = new std::unordered_set<char>[cols];
+            entropies[r] = new double[cols];
         }
 
         // initializing all spaces
@@ -60,16 +75,17 @@ public:
             for (int c = 0; c < cols; c++) 
             {
                 grid[r][c] = '*';
-                superpositions[r][c] = positions; // copy constructor
+                superpositions[r][c] = positions; 
+                entropies[r][c] = calculateEntropy(r, c); 
             }
         }
-
     }
 
     void collapseTile(int r, int c, char newValue) 
     {
         grid[r][c] = newValue;
         superpositions[r][c].clear();
+        entropies[r][c] = 0;
         propogate(r, c);
     }
 
@@ -87,14 +103,10 @@ public:
 
         for (const auto& position : superpositions[tile2_r][tile2_c]) {
             std::tuple<char, char, Dir> ruleToFind = std::make_tuple(tile1, position, d);
-            
-            std::cout << "(" << std::get<0>(ruleToFind) << ", " << std::get<1>(ruleToFind)
-                  << ", " << dirToString[std::get<2>(ruleToFind)] << ")" << std::endl;
-            
+    
             auto it = rules.find(ruleToFind); 
 
-            if (it == rules.end()) {
-                std::cout << "Tuple is not in the set." << std::endl;
+            if (it == rules.end()) { // rule not found
                 positionsToErase.push_back(position);
             }       
         }
@@ -102,6 +114,18 @@ public:
         for (const auto& position : positionsToErase) {
             superpositions[tile2_r][tile2_c].erase(position);
         }
+
+        entropies[tile2_r][tile2_c] = calculateEntropy(tile2_r, tile2_c);
+    }
+
+    double calculateEntropy(int r, int c) {
+        double entropy = 0;
+        for (const auto& event : superpositions[r][c]) {
+            double prob_event = weights[event] / weightTotal;
+            entropy += prob_event * log(1 / prob_event);  
+        }
+
+        return entropy;
     }
 
     template <size_t constraintRows, size_t constraintCols>
@@ -129,6 +153,7 @@ public:
                 } else {
                     weights[ constraintGrid[r][c] ] = weights[ constraintGrid[r][c] ] + 1;
                 }
+                weightTotal += 1;
 
                 // ADD TO POSITIONS
                 positions.insert( constraintGrid[r][c]);
@@ -143,6 +168,19 @@ public:
             for (int c=0; c < cols; c++) 
             {
                 std::cout << grid[r][c] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+    void printEntropies() const
+    {
+        for (int r=0; r<rows; r++) 
+        {
+            for (int c=0; c<cols; c++)
+            {
+                std::cout << entropies[r][c] << " ";
             }
             std::cout << std::endl;
         }
@@ -200,9 +238,15 @@ int main()
     Wave wave(3, 3, constraintGrid);
 
     wave.collapseTile(0, 0, 'S');
-    wave.collapseTile(1, 1, 'C');
-
     wave.printGrid();
     wave.printSuperpositions();
-    wave.printConstraints();
+    wave.printEntropies();
+    wave.collapseTile(1, 1, 'C');
+    wave.printGrid();
+    wave.printSuperpositions();
+    wave.printEntropies();
+
+    // wave.printGrid();
+    // wave.printSuperpositions();
+    // wave.printConstraints();
 };
