@@ -2,6 +2,7 @@
 #include <string>
 #include <tuple>
 #include <array>
+#include <vector>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -25,40 +26,38 @@ private:
     int rows;
     int cols;
     char **grid;
+    std::unordered_set<char> positions;
+    std::unordered_set<char> **superpositions;
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
     std::unordered_map<char, int> weights;
 
 public:
-    Wave(int numRows, int numCols)
+    template <size_t constraintRows, size_t constraintCols>
+    Wave(int numRows, int numCols, const std::array<std::array<char, constraintCols>, constraintRows>& constraintGrid)
     {
         rows = numRows;
         cols = numCols;
+        generateConstraints(constraintGrid);
 
+        // creating references
         grid = new char *[rows]; // new = heap allocation, otherwise same as C
+        superpositions = new std::unordered_set<char> *[rows]; // new = heap allocation, otherwise same as C
         for (int r = 0; r < rows; r++) 
         {
             grid[r] = new char[cols];
+            superpositions[r] = new std::unordered_set<char>[cols];
         }
 
+        // initializing all spaces
         for (int r = 0; r < rows; r++) 
         {
             for (int c = 0; c < cols; c++) 
             {
                 grid[r][c] = '*';
+                superpositions[r][c] = positions; // copy constructor
             }
         }
-    }
 
-    void printGrid() const 
-    {
-        for (int r=0; r < rows; r++) 
-        {
-            for (int c=0; c < cols; c++) 
-            {
-                std::cout << grid[r][c] << " ";
-            }
-            std::cout << std::endl;
-        }
     }
 
     void setTile(int r, int c, char newValue) 
@@ -86,13 +85,46 @@ public:
                 if (c > 0) { rules.insert( {constraintGrid[r][c], constraintGrid[r][c-1], Right} ); };
 
                 // ADD TO WEIGHTS
-                if (weights[constraintGrid[r][c]] == 0) {
-                    weights[constraintGrid[r][c]] = 1;
+                if (weights[ constraintGrid[r][c] ] == 0) {
+                    weights[ constraintGrid[r][c] ] = 1;
                 } else {
-                    weights[constraintGrid[r][c]] = weights[constraintGrid[r][c]] + 1;
+                    weights[ constraintGrid[r][c] ] = weights[ constraintGrid[r][c] ] + 1;
                 }
+
+                // ADD TO POSITIONS
+                positions.insert( constraintGrid[r][c]);
             }
         }
+    }
+
+    void printGrid() const 
+    {
+        for (int r=0; r < rows; r++) 
+        {
+            for (int c=0; c < cols; c++) 
+            {
+                std::cout << grid[r][c] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+    void printSuperpositions() const 
+    {
+        for (int r=0; r < rows; r++) 
+        {
+            for (int c=0; c < cols; c++) 
+            {
+                std::cout << "[";
+                for (const auto& element : superpositions[r][c]) {
+                    std::cout << element;
+                }
+                std::cout << "] ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
     }
 
     void printConstraints() {
@@ -109,6 +141,11 @@ public:
                   << ", " << dirToString[std::get<2>(rule)] << ")" << std::endl;
         }
 
+        std::cout << "\nPositions:" << std::endl;
+        for (const auto& position : positions) {
+            std::cout << position << std::endl;
+        }
+
         std::cout << "\nWeights:" << std::endl;
         for (const auto& [key, value] : weights) {
             std::cout << '[' << key << "] = " << value << std::endl;
@@ -118,8 +155,6 @@ public:
 
 int main()
 {
-    Wave wave(10, 10);
-
     // std::array<std::array<char,2>,1> constraintGrid {{
     //     {{'S','C'}}
     // }};
@@ -130,30 +165,8 @@ int main()
         {{'L','L','C'}}
     }};
 
-    wave.generateConstraints(constraintGrid);
+    Wave wave(10, 10, constraintGrid);
+    wave.printGrid();
     wave.printConstraints();
-
-    // TESTS FOR STL:
-
-    // unordered_set<char> s1;
-    // s1.insert('A');
-    // s1.insert('B');
-    // s1.insert('C');
-    // s1.insert('A');
-
-    // tuple<string, string, Dir> t1 = {"bruh", "bruh2", Down};
-
-    // std::cout << "First string: " << std::get<0>(t1) << std::endl;
-    // std::cout << "Second string: " << std::get<1>(t1) << std::endl;
-    // std::cout << "Direction: " << std::get<2>(t1) << std::endl;
-
-    // std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rule;
-    // rule.insert({'S', 'C', Down});
-
-    // auto it = rule.find({'S', 'C', Up});
-    // if (it != rule.end()) {
-    //     std::cout << "Element " << " is in the set." << std::endl;
-    // } else {
-    //     std::cout << "Element " << " is not in the set." << std::endl;
-    // }
+    wave.printSuperpositions();
 };
