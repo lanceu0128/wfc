@@ -4,9 +4,11 @@
 #include <array>
 #include <vector>
 #include <unordered_set>
+#include <set>
 #include <unordered_map>
 #include <cmath>
 #include <random>
+#include <iomanip>
 
 enum Dir { Up, Right, Down, Left };
 
@@ -31,10 +33,10 @@ private:
     // grids
     char **grid;
     double **entropies;
-    std::unordered_set<char> **superpositions;
+    std::set<char> **superpositions;
     
     // constraints
-    std::unordered_set<char> positions;
+    std::set<char> positions;
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
     std::unordered_map<char, double> weights;
     double weightTotal = 0;
@@ -61,13 +63,13 @@ public:
     void generateGrids() {
         // creating references
         grid = new char *[rows]; // new = heap allocation, otherwise same as C
-        superpositions = new std::unordered_set<char> *[rows]; // new = heap allocation, otherwise same as C
+        superpositions = new std::set<char> *[rows]; // new = heap allocation, otherwise same as C
         entropies = new double *[rows];
 
         for (int r = 0; r < rows; r++) 
         {
             grid[r] = new char[cols];
-            superpositions[r] = new std::unordered_set<char>[cols];
+            superpositions[r] = new std::set<char>[cols];
             entropies[r] = new double[cols];
         }
 
@@ -85,7 +87,13 @@ public:
 
     void collapse(int r, int c) 
     {
-        grid[r][c] = *superpositions[r][c].begin();
+        // pick random from superpositions
+        int idx = (rand() % superpositions[r][c].size());
+        auto it = superpositions[r][c].begin();
+        std::advance(it, idx);
+        grid[r][c] = *it;
+
+        // clear data and propogate
         superpositions[r][c].clear();
         entropies[r][c] = 0;
         propogate(r, c);
@@ -221,7 +229,7 @@ public:
         {
             for (int c=0; c<cols; c++)
             {
-                std::cout << entropies[r][c] << " ";
+                std::cout << std::fixed << std::setprecision(10) << entropies[r][c] << " ";
             }
             std::cout << std::endl;
         }
@@ -269,6 +277,8 @@ int main()
     // std::array<std::array<char,2>,1> constraintGrid {{
     //     {{'C','S'}}
     // }};
+
+    std::srand(std::time(0));
 
     std::array<std::array<char,3>,3> constraintGrid {{
         {{'C','S','S'}},
