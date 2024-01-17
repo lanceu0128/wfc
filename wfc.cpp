@@ -102,13 +102,6 @@ public:
             if (tempTotal > randPos) { break; };
             idx += 1;
         }
-        
-        std::cout << idx << std::endl;
-        std::cout << "[";
-        for (const auto& element : superpositions[r][c]) {
-            std::cout << element;
-        }
-        std::cout << "] " << std::endl;
 
         auto it = superpositions[r][c].begin();
         std::advance(it, idx);
@@ -169,16 +162,36 @@ public:
             for (int c=0; c < constraintCols; c++) 
             {
                 // LOOK UP
-                if (r > 0) { rules.insert( {constraintGrid[r][c], constraintGrid[r-1][c], Down} ); };
+                if (r > 0) { 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r-1][c], Up} ); 
+                    rules.insert( {constraintGrid[r-1][c], constraintGrid[r][c], Down} ); 
+                    rules.insert( {constraintGrid[r-1][c], constraintGrid[r][c], Left} ); 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r-1][c], Right} ); 
+                };
 
                 // LOOK RIGHT
-                if (c < constraintCols-1) { rules.insert( {constraintGrid[r][c], constraintGrid[r][c+1], Left} ); };
+                if (c < constraintCols-1) { 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r][c+1], Up} ); 
+                    rules.insert( {constraintGrid[r][c+1], constraintGrid[r][c], Down} ); 
+                    rules.insert( {constraintGrid[r][c+1], constraintGrid[r][c], Left} ); 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r][c+1], Right} ); 
+                };
 
                 // LOOK DOWN
-                if (r < constraintRows-1) { rules.insert( {constraintGrid[r][c], constraintGrid[r+1][c], Up} ); };
+                if (r < constraintRows-1) { 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r+1][c], Up} ); 
+                    rules.insert( {constraintGrid[r+1][c], constraintGrid[r][c], Down} ); 
+                    rules.insert( {constraintGrid[r+1][c], constraintGrid[r][c], Left} ); 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r+1][c], Right} ); 
+                };
 
                 // LOOK LEFT
-                if (c > 0) { rules.insert( {constraintGrid[r][c], constraintGrid[r][c-1], Right} ); };
+                if (c > 0) { 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r][c-1], Up} ); 
+                    rules.insert( {constraintGrid[r][c-1], constraintGrid[r][c], Down} ); 
+                    rules.insert( {constraintGrid[r][c], constraintGrid[r][c-1], Left} ); 
+                    rules.insert( {constraintGrid[r][c-1], constraintGrid[r][c], Right} ); 
+                };
 
                 // ADD TO WEIGHTS
                 if (weights[ constraintGrid[r][c] ] == 0) {
@@ -299,31 +312,58 @@ int main()
 
     // auto start = std::chrono::high_resolution_clock::now();
 
-    // std::array<std::array<char,2>,1> constraintGrid {{
-    //     {{'S','C'}},
+    // std::array<std::array<char,1>,2> constraintGrid {{
+    //     {{'S', 'C'}},
     // }};
 
-    std::array<std::array<char,3>,3> constraintGrid {{
-        {{'S','S','S'}},
-        {{'C','C','S'}},
-        {{'L','L','C'}},
-    }};
+    // std::array<std::array<char,1>,2> constraintGrid {{
+    //     {{'S'}},
+    //     {{'C'}}
+    // }};
+
+    // std::array<std::array<char,3>,3> constraintGrid {{
+    //     {{'S','S','S'}},
+    //     {{'C','C','S'}},
+    //     {{'L','L','C'}},
+    // }};
+
+    // std::array<std::array<char,3>,3> constraintGrid {{
+    //     {{'C','S','S'}},
+    //     {{'L','C','S'}},
+    //     {{'L','L','C'}},
+    // }};
 
     // std::array<std::array<char,5>,5> constraintGrid {{
-    //     {{'S','S','S','S','S'}},
-    //     {{'S','S','C','S','S'}},
-    //     {{'S','C','L','C','S'}},
-    //     {{'S','S','C','S','S'}},
-    //     {{'S','S','S','S','S'}},
+    //     {{'C','C','S','S','S'}},
+    //     {{'L','C','C','S','S'}},
+    //     {{'L','L','C','C','S'}},
+    //     {{'M','L','L','C','C'}},
+    //     {{'M','M','L','L','C'}},
     // }};
 
-    Wave wave(5, 5, constraintGrid);
-    // wave.printConstraints();
+    // std::array<std::array<char,5>,5> constraintGrid {{
+    //     {{'S','C','L','M','P'}},
+    //     {{'C','S','C','L','M'}},
+    //     {{'L','C','S','C','L'}},
+    //     {{'M','L','C','S','C'}},
+    //     {{'P','M','L','C','S'}},
+    // }};
+
+    std::array<std::array<char,5>,5> constraintGrid {{
+        {{'S','S','S','S','S'}},
+        {{'S','S','C','S','S'}},
+        {{'S','C','L','C','S'}},
+        {{'S','S','C','S','S'}},
+        {{'S','S','S','S','S'}},
+    }};
+
+    Wave wave(25, 25, constraintGrid);
+    wave.printConstraints();
 
     bool retval = true;
     while (retval) {
-        wave.printGrid();
-        wave.printEntropies();
+        // wave.printGrid();
+        // wave.printEntropies();
         retval = wave.step();
     }
 
