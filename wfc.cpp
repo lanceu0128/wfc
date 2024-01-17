@@ -89,7 +89,27 @@ public:
     void collapse(int r, int c) 
     {
         // pick random from superpositions
-        int idx = (rand() % superpositions[r][c].size());
+        int superpositionWeightTotal = 0;
+        for (const auto& element : superpositions[r][c]) {
+            superpositionWeightTotal += weights[element];
+        }
+        
+        int randPos = (rand() % int (superpositionWeightTotal));
+        int tempTotal = 0;
+        int idx = 0;
+        for (const auto& element : superpositions[r][c]) {
+            tempTotal += weights[element];
+            if (tempTotal > randPos) { break; };
+            idx += 1;
+        }
+        
+        std::cout << idx << std::endl;
+        std::cout << "[";
+        for (const auto& element : superpositions[r][c]) {
+            std::cout << element;
+        }
+        std::cout << "] " << std::endl;
+
         auto it = superpositions[r][c].begin();
         std::advance(it, idx);
         grid[r][c] = *it;
@@ -277,17 +297,17 @@ int main()
 {
     std::srand(std::time(0));
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    std::array<std::array<char,2>,3> constraintGrid {{
-        {{'S','C'}},
-    }};
-
-    // std::array<std::array<char,3>,3> constraintGrid {{
-    //     {{'S','S','S'}},
-    //     {{'C','C','S'}},
-    //     {{'L','L','C'}},
+    // std::array<std::array<char,2>,1> constraintGrid {{
+    //     {{'S','C'}},
     // }};
+
+    std::array<std::array<char,3>,3> constraintGrid {{
+        {{'S','S','S'}},
+        {{'C','C','S'}},
+        {{'L','L','C'}},
+    }};
 
     // std::array<std::array<char,5>,5> constraintGrid {{
     //     {{'S','S','S','S','S'}},
@@ -297,18 +317,19 @@ int main()
     //     {{'S','S','S','S','S'}},
     // }};
 
-    Wave wave(6, 6, constraintGrid);
+    Wave wave(5, 5, constraintGrid);
+    // wave.printConstraints();
 
     bool retval = true;
     while (retval) {
-        // wave.printGrid();
-        // wave.printEntropies();
+        wave.printGrid();
+        wave.printEntropies();
         retval = wave.step();
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-    std::cout << "Execution Time: " << duration.count() << " seconds" << std::endl;
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    // std::cout << "Execution Time: " << duration.count() << " seconds" << std::endl;
 
     wave.printGrid();
 };
