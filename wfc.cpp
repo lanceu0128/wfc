@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <cmath>
+#include <random>
 
 enum Dir { Up, Right, Down, Left };
 
@@ -37,6 +38,7 @@ private:
     std::unordered_set<std::tuple<char, char, Dir>, Hash::RuleHash> rules;
     std::unordered_map<char, double> weights;
     double weightTotal = 0;
+    // double minEntropy = -1;
 
     // Dir enum -> string translator
     std::unordered_map<Dir, std::string> dirToString = {
@@ -76,7 +78,7 @@ public:
             {
                 grid[r][c] = '*';
                 superpositions[r][c] = positions; 
-                entropies[r][c] = calculateEntropy(r, c); 
+                entropies[r][c] = calculateEntropy(r, c);  
             }
         }
     }
@@ -125,6 +127,8 @@ public:
             entropy += prob_event * log(prob_event);  
         }
 
+        // if (-entropy < minEntropy || minEntropy == -1) { minEntropy = -entropy; }; 
+
         return -entropy;
     }
 
@@ -164,30 +168,42 @@ public:
     bool step() {
         // find minimal nonzero entropy
         double minEntropy = -1;
-        int minC = 0;
-        int minR = 0;
         for (int r=0; r < rows; r++) 
         {
             for (int c=0; c < cols; c++) 
             {
-                if (grid[r][c] == '*' && (-entropies[r][c] < minEntropy || minEntropy == -1)) { 
-                    minEntropy = entropies[r][c]; 
-                    minR = r;
-                    minC = c;
+                if ((minEntropy == -1 || entropies[r][c] < minEntropy) && entropies[r][c] != 0) { 
+                    minEntropy = entropies[r][c];
+                }
+            }
+        } 
+
+        // break if all cells are empty
+        if (minEntropy == -1) { return false; }
+
+        // find all elements with minimal entropy
+        std::vector<std::tuple<int, int>> minEntropyTiles;
+        for (int r=0; r < rows; r++) 
+        {
+            for (int c=0; c < cols; c++) 
+            {
+                if (entropies[r][c] == minEntropy && entropies[r][c] != 0) { 
+                    minEntropyTiles.push_back(std::make_tuple(r, c));
                 }; 
             }
         } 
 
-        // break if all cells checked
-        if (minEntropy == -1) { return false; };
+        // collapse and propogate random cell with minimum entropy
+        int idx = (rand() % minEntropyTiles.size());
+        std::tuple<int, int> randMinEntropyTile = minEntropyTiles[idx];
+        collapse(std::get<0>(randMinEntropyTile), std::get<1>(randMinEntropyTile));
 
-        // collapse and propogate
-        collapse(minR, minC);
         return true;
     }
 
     void printGrid() const 
     {
+        std::cout << std::endl;
         for (int r=0; r < rows; r++) 
         {
             for (int c=0; c < cols; c++) 
@@ -209,7 +225,7 @@ public:
             }
             std::cout << std::endl;
         }
-        std::cout << std::endl;
+        // std::cout << "Minimum Entropy: " << minEntropy << std::endl;
     }
 
     void printSuperpositions() const 
@@ -260,12 +276,12 @@ int main()
         {{'L','L','C'}}
     }};
 
-    Wave wave(6, 6, constraintGrid);
+    Wave wave(4, 4, constraintGrid);
 
     bool retval = true;
     while (retval) {
-        retval = wave.step();
         wave.printGrid();
-        wave.printSuperpositions();
+        wave.printEntropies();
+        retval = wave.step();
     }
 };
