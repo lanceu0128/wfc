@@ -9,6 +9,7 @@
 #include <cmath>
 #include <random>
 #include <iomanip>
+#include <chrono>
 
 enum Dir { Up, Right, Down, Left };
 
@@ -274,24 +275,40 @@ public:
 
 int main()
 {
-    // std::array<std::array<char,2>,1> constraintGrid {{
-    //     {{'C','S'}}
-    // }};
-
     std::srand(std::time(0));
 
-    std::array<std::array<char,3>,3> constraintGrid {{
-        {{'C','S','S'}},
-        {{'L','C','S'}},
-        {{'L','L','C'}}
+    auto start = std::chrono::high_resolution_clock::now();
+
+    std::array<std::array<char,2>,3> constraintGrid {{
+        {{'S','C'}},
     }};
 
-    Wave wave(4, 4, constraintGrid);
+    // std::array<std::array<char,3>,3> constraintGrid {{
+    //     {{'S','S','S'}},
+    //     {{'C','C','S'}},
+    //     {{'L','L','C'}},
+    // }};
+
+    // std::array<std::array<char,5>,5> constraintGrid {{
+    //     {{'S','S','S','S','S'}},
+    //     {{'S','S','C','S','S'}},
+    //     {{'S','C','L','C','S'}},
+    //     {{'S','S','C','S','S'}},
+    //     {{'S','S','S','S','S'}},
+    // }};
+
+    Wave wave(6, 6, constraintGrid);
 
     bool retval = true;
     while (retval) {
-        wave.printGrid();
-        wave.printEntropies();
+        // wave.printGrid();
+        // wave.printEntropies();
         retval = wave.step();
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    std::cout << "Execution Time: " << duration.count() << " seconds" << std::endl;
+
+    wave.printGrid();
 };
